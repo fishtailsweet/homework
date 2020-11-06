@@ -8,15 +8,18 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Runtime/Engine/Classes/Kismet/GameplayStatics.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AMyProjectCharacter
 
 AMyProjectCharacter::AMyProjectCharacter()
 {
+	UserName = "";
+	Score = 0;
 	PrimaryActorTick.bCanEverTick = true;	// 设置此角色每帧调用 Tick()。不需要时可将此关闭，以提高性能
 	// Set size for collision capsule
-
+	
 	// set our turn rates for input
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
@@ -29,7 +32,7 @@ AMyProjectCharacter::AMyProjectCharacter()
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // ...at this rotation rate
-	GetCharacterMovement()->JumpZVelocity = 600.f;
+	GetCharacterMovement()->JumpZVelocity = 400.f;
 	GetCharacterMovement()->AirControl = 0.2f;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
@@ -58,6 +61,7 @@ void AMyProjectCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMyProjectCharacter::StartJump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AMyProjectCharacter::StopJump);
 
+
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMyProjectCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMyProjectCharacter::MoveRight);
 
@@ -69,29 +73,17 @@ void AMyProjectCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AMyProjectCharacter::LookUpAtRate);
 
-	// handle touch devices
-	PlayerInputComponent->BindTouch(IE_Pressed, this, &AMyProjectCharacter::TouchStarted);
-	PlayerInputComponent->BindTouch(IE_Released, this, &AMyProjectCharacter::TouchStopped);
-
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AMyProjectCharacter::OnResetVR);
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AMyProjectCharacter::Fire);	// 绑定 OnFire 函数
+	PlayerInputComponent->BindAction("Glass", IE_Pressed, this, &AMyProjectCharacter::OpenGlass);
+	PlayerInputComponent->BindAction("Glass", IE_Released, this, &AMyProjectCharacter::CloseGlass);
 }
 
 
 void AMyProjectCharacter::OnResetVR()
 {
 	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
-}
-
-void AMyProjectCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
-{
-		Jump();
-}
-
-void AMyProjectCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
-{
-		StopJumping();
 }
 
 void AMyProjectCharacter::TurnAtRate(float Rate)
@@ -140,16 +132,15 @@ void AMyProjectCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (GEngine)
-	{
+	//if (GEngine)
+	//{
 		// 显示调试信息五秒。-1"键"值（首个参数）说明我们无需更新或刷新此消息。
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("We are using FPSCharacter."));
-	}
+		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("We are using FPSCharacter."));
+	//}
 }
 void AMyProjectCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 void AMyProjectCharacter::StartJump()
 {
@@ -170,10 +161,8 @@ void AMyProjectCharacter::Fire(){
 		FVector CameraLocation;
 		FRotator CameraRotation;
 		GetActorEyesViewPoint(CameraLocation, CameraRotation);
-		
 		// 将 MuzzleOffset 从摄像机空间变换到世界空间
 		FVector MuzzleLocation = CameraLocation + FTransform(CameraRotation).TransformVector(MuzzleOffset);
-		MuzzleLocation.Y += 60;
 		FRotator MuzzleRotation = GetTransform().GetRotation().Rotator();
 		MuzzleRotation.Pitch = CameraRotation.Pitch;
 		UWorld* World = GetWorld();
@@ -183,13 +172,24 @@ void AMyProjectCharacter::Fire(){
 			SpawnParams.Owner = this;
 			SpawnParams.Instigator = GetInstigator();	// instigator就是被控制器控制的pawn，在这个案例中指的是玩家
 			// 在枪口处生成发射物
-			AMyBullet* Projectile = World->SpawnActor<AMyBullet>(BulletClass, MuzzleLocation, MuzzleRotation, SpawnParams);
+			FTransform transform;
+			transform.SetLocation(MuzzleLocation);
+			transform.SetRotation(FQuat(MuzzleRotation));
+			AMyBullet* Projectile = World->SpawnActorDeferred<AMyBullet>(BulletClass, transform);
+			Projectile->SetScore(&Score);
+			Projectile->FinishSpawning(transform);
 			if (Projectile)
 			{
 				// 设置发射物的初始轨道。
-				FVector LaunchDirection = MuzzleRotation.Vector();
+				FVector LaunchDirection = CameraRotation.Vector();
 				Projectile->FireInDirection(LaunchDirection);
 			}
 		}
 	}
+}
+void AMyProjectCharacter::OpenGlass() {
+	FollowCamera->SetRelativeLocation(FVector(340, 0, 0));
+}
+void AMyProjectCharacter::CloseGlass() {
+	FollowCamera->SetRelativeLocation(FVector(0, 0, 0));
 }

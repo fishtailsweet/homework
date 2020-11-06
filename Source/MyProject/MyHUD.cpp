@@ -10,7 +10,7 @@ void AMyHUD::DrawHUD()
     if (CrosshairTexture)
     {
         // 找到画布中心
-        FVector2D Center(Canvas->ClipX * 0.52f, Canvas->ClipY * 0.48f);
+        FVector2D Center(Canvas->ClipX * 0.5f, Canvas->ClipY * 0.43f);
         // 纹理维度进行一半偏移，使纹理中心和画布中心对齐
         FVector2D CrossHairDrawPosition(Center.X - (CrosshairTexture->GetSurfaceWidth() * 0.5f), Center.Y - (CrosshairTexture->GetSurfaceHeight() * 0.5f));
 

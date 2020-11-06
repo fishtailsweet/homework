@@ -16,11 +16,11 @@ class MYPROJECT_API AMyBullet : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AMyBullet();
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+private:
+	int *SumScore;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -33,5 +33,5 @@ public:
 	USphereComponent* CollisionComponent;
 	UPROPERTY(VisibleAnywhere, Category = Movement)
 	UProjectileMovementComponent* ProjectileMovementComponent;	// 发射物运动组件
-private:
+	void SetScore(int *Sum);
 };

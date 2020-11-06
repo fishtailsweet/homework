@@ -6,6 +6,7 @@
 // Sets default values
 AMyBullet::AMyBullet()
 {
+	SumScore = nullptr;
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
@@ -17,12 +18,12 @@ AMyBullet::AMyBullet()
 	CollisionComponent->OnComponentHit.AddDynamic(this, &AMyBullet::OnHit);	// 与碰撞的事件处理函数关联起来
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
 	ProjectileMovementComponent->SetUpdatedComponent(CollisionComponent);
-	ProjectileMovementComponent->InitialSpeed = 3000.0f;
-	ProjectileMovementComponent->MaxSpeed = 3000.0f;
+	ProjectileMovementComponent->InitialSpeed = 8000.0f;
+	ProjectileMovementComponent->MaxSpeed = 8000.0f;
 	ProjectileMovementComponent->bRotationFollowsVelocity = true;	// 勾选 Rotation Follows Velocity 每帧更新其旋转 以匹配速度的方向
 	ProjectileMovementComponent->bShouldBounce = false;	// 落地弹起效果
 	ProjectileMovementComponent->ProjectileGravityScale = 0;	// 重力为0即射线
-	InitialLifeSpan = 1.0f;	// 设置发射物的生命周期
+	InitialLifeSpan = 3.0f;	// 设置发射物的生命周期
 }
 
 // Called when the game starts or when spawned
@@ -47,11 +48,19 @@ void AMyBullet::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPr
 	if (OtherActor != this) {
 		float radius = 100 * Hit.GetActor()->GetActorScale3D().Y / 2;	// scale中显示的是倍数，需要乘上模型本身的大小
 		for (int i = 1; i <= 5; ++i) {
+			if (i == 5) {
+				(*SumScore)++;
+				break;
+			}
 			if ((pow((Hit.Location.Y - Hit.GetActor()->GetTransform().GetLocation().Y), 2) + pow((Hit.Location.Z - Hit.GetActor()->GetTransform().GetLocation().Z), 2)) <= i * pow(radius, 2) / 5) {
-				GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::FromInt(5 - i + 1));
+				(*SumScore) += 5 - i + 1;
 				break;
 			}
 		}
 		Destroy();
 	}
+}
+void AMyBullet::SetScore(int* Sum)
+{
+	SumScore = Sum;
 }

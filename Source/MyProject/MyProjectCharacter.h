@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "MyBullet.h"
-#include "MyGun.h"
+#include "Runtime/Engine/Classes/Engine/SkeletalMeshSocket.h" 
 #include "MyProjectCharacter.generated.h"
 
 UCLASS(config=Game)
@@ -24,6 +24,7 @@ class AMyProjectCharacter : public ACharacter
 	// EditDefaultsOnly 说明符意味着发射物类只能在蓝图上被设为默认，而不能在蓝图的每个实例上设置
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
 	TSubclassOf<class AActor> BulletClass;
+
 public:
 	AMyProjectCharacter();
 
@@ -70,7 +71,7 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// End of APawn interface
 	virtual void BeginPlay() override;
-
+	// 弹簧臂是连接摄像机（或其他组件）的简便方式，因此其不会过于僵硬，移动时也更加流畅
 public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -79,15 +80,24 @@ public:
 	// 每帧调用
 	virtual void Tick(float DeltaTime) override;
 	// 按下按键时设置跳跃标记
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void StartJump();
 	// 松开按键时清除跳跃标记
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void StopJump();
+	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void Fire();	// 处理开火的函数
 	// 可通过 EditAnywhere 说明符在蓝图编辑器的默认模式或角色任意实例的 Details 标签中修改枪口偏移值（只能用于public成员）
 	// 可通过 BlueprintReadWrite 说明符获取并设置蓝图中的枪口偏移值
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void OpenGlass();	
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void CloseGlass();	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	FVector MuzzleOffset;	// 从摄像机位置的枪口偏移
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	int Score;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	FString UserName;
 };
 
